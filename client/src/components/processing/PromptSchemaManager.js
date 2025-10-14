@@ -324,7 +324,6 @@ function PromptSchemaManager() {
   
   // Quality comparison states
   const [showQualityComparison, setShowQualityComparison] = useState(false);
-  
   // Pipeline view states
   const [pipelineView, setPipelineView] = useState('reference'); // 'reference' | 'generated'
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -1093,10 +1092,10 @@ ${JSON.stringify(essentialTestCases, null, 2)}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <TemplateIcon color="primary" />
-          Prompt Template & JSON Schema Manager
+          User Story Feedback
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Configure and test AI prompt templates and JSON schemas for healthcare test cases
+          Get feedback about the newly created user story
         </Typography>
         <Alert severity="info" sx={{ mt: 2 }}>
           <Typography variant="body2">
@@ -1116,111 +1115,12 @@ ${JSON.stringify(essentialTestCases, null, 2)}
       {/* Main Tabs */}
       <Paper elevation={2}>
         <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
-          <Tab icon={<SchemaIcon />} label="JSON Schema" />
-          <Tab icon={<CodeIcon />} label="Prompt Template" />
           <Tab icon={<TestIcon />} label="Test & Preview" />
         </Tabs>
         <Divider />
 
-        {/* Tab 0: JSON Schema */}
-        <TabPanel value={tabValue} index={0}>
-          <Box sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">JSON Schema Configuration</Typography>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Tooltip title="Reset to default">
-                  <IconButton size="small" onClick={() => handleReset('schema')}>
-                    <ResetIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Copy schema">
-                  <IconButton size="small" onClick={() => handleCopy(jsonSchema, 'Schema')}>
-                    <CopyIcon />
-                  </IconButton>
-                </Tooltip>
-                {schemaValid ? (
-                  <Chip icon={<ValidIcon />} label="Valid" color="success" size="small" />
-                ) : (
-                  <Chip icon={<ErrorIcon />} label="Invalid" color="error" size="small" />
-                )}
-              </Box>
-            </Box>
-
-            <TextField
-              fullWidth
-              multiline
-              rows={25}
-              value={jsonSchema}
-              onChange={handleSchemaChange}
-              variant="outlined"
-              error={!schemaValid}
-              helperText={schemaError}
-              sx={{ 
-                fontFamily: 'monospace',
-                '& textarea': { fontFamily: 'monospace', fontSize: '0.875rem' }
-              }}
-            />
-
-            {schemaError && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                <Typography variant="body2">
-                  <strong>JSON Error:</strong> {schemaError}
-                </Typography>
-              </Alert>
-            )}
-
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="caption" color="text.secondary">
-                This schema defines the structure of healthcare test cases stored in MongoDB.
-                Required fields: testCaseId, testCaseTitle, testSteps, expectedResults.
-              </Typography>
-            </Box>
-          </Box>
-        </TabPanel>
-
-        {/* Tab 1: Prompt Template */}
-        <TabPanel value={tabValue} index={1}>
-          <Box sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Prompt Template</Typography>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Tooltip title="Reset to default">
-                  <IconButton size="small" onClick={() => handleReset('prompt')}>
-                    <ResetIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Copy template">
-                  <IconButton size="small" onClick={() => handleCopy(promptTemplate, 'Template')}>
-                    <CopyIcon />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </Box>
-
-            <TextField
-              fullWidth
-              multiline
-              rows={30}
-              value={promptTemplate}
-              onChange={(e) => setPromptTemplate(e.target.value)}
-              variant="outlined"
-              sx={{ 
-                fontFamily: 'monospace',
-                '& textarea': { fontFamily: 'monospace', fontSize: '0.875rem' }
-              }}
-            />
-
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="caption" color="text.secondary">
-                This template guides the AI in analyzing and summarizing healthcare test cases.
-                Use placeholders like {'{query}'}, {'{testCases}'} for dynamic content.
-              </Typography>
-            </Box>
-          </Box>
-        </TabPanel>
-
         {/* Tab 2: Test & Preview */}
-        <TabPanel value={tabValue} index={2}>
+        <TabPanel value={tabValue} index={0}>
           <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Test Prompt Template
@@ -1234,7 +1134,7 @@ ${JSON.stringify(essentialTestCases, null, 2)}
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Test Query / User Story"
+                  label="User Story"
                   multiline
                   rows={3}
                   value={testQuery}
@@ -1250,46 +1150,9 @@ ${JSON.stringify(essentialTestCases, null, 2)}
                 />
               </Grid>
 
-              {/* Test Cases Input */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Sample Test Cases (JSON)"
-                  multiline
-                  rows={15}
-                  value={testCases}
-                  onChange={(e) => setTestCases(e.target.value)}
-                  variant="outlined"
-                  sx={{ 
-                    fontFamily: 'monospace',
-                    '& textarea': { fontFamily: 'monospace', fontSize: '0.875rem' ,   minWidth: '800px',
-                        width: '100%'}
-                    
-                  }}
-                />
-              </Grid>
-
               {/* Test Button */}
               <Grid item xs={12}>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<TestIcon />}
-                    onClick={handleTest}
-                    disabled={testing || !schemaValid}
-                  >
-                    {testing ? 'Testing...' : 'Test Prompt Engineering'}
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    startIcon={<SearchIcon />}
-                    onClick={handleRagTest}
-                    disabled={ragTesting || !schemaValid}
-                  >
-                    {ragTesting ? 'Testing...' : 'Test RAG (Standard)'}
-                  </Button>
                   <Button
                     variant="contained"
                     color="success"

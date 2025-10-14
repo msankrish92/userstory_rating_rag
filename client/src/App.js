@@ -151,62 +151,6 @@ const collapsedDrawerWidth = 72;
 
 const menuItems = [
   { 
-    id: 'convert', 
-    label: 'Convert to JSON', 
-    icon: <TransformIcon />, 
-    component: ConvertToJson,
-    description: 'Upload and convert Excel files'
-  },
-  { 
-    id: 'embeddings', 
-    label: 'Embeddings & Store', 
-    icon: <StorageIcon />, 
-    component: EmbeddingsStore,
-    description: 'Create and manage embeddings'
-  },
-  { 
-    id: 'preprocess', 
-    label: 'Query Preprocessing', 
-    icon: <PreprocessIcon />, 
-    component: QueryPreprocessing,
-    description: 'Transform & expand queries'
-  },
-  { 
-    id: 'query', 
-    label: 'Vector Search', 
-    icon: <SearchIcon />, 
-    component: QuerySearch,
-    description: 'Semantic vector search'
-  },
-  { 
-    id: 'bm25', 
-    label: 'BM25 Search', 
-    icon: <KeywordIcon />, 
-    component: BM25Search,
-    description: 'Keyword-based search'
-  },
-  { 
-    id: 'hybrid', 
-    label: 'Hybrid Search', 
-    icon: <HybridIcon />, 
-    component: HybridSearch,
-    description: 'Combined BM25 + Vector'
-  },
-  { 
-    id: 'rerank', 
-    label: 'Score Fusion', 
-    icon: <RerankIcon />, 
-    component: RerankingSearch,
-    description: 'BM25+Vector fusion reranking'
-  },
-  { 
-    id: 'summarize', 
-    label: 'Summarize & Dedup', 
-    icon: <SummarizeIcon />, 
-    component: SummarizationDedup,
-    description: 'AI summarization & deduplication'
-  },
-  { 
     id: 'prompt-schema', 
     label: 'Prompt & Schema', 
     icon: <SchemaIcon />, 
