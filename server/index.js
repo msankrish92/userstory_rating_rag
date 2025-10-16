@@ -822,17 +822,23 @@ app.post('/api/search/summarize', async (req, res) => {
     }).join('\n');
 
     const systemPrompt = summaryType === 'detailed'
-      ? `You are a QA expert. Analyze test cases and provide a CONCISE summary covering:
-1. Modules tested and main functionality
-2. Priority distribution (P1/P2/P3)
-3. Test coverage gaps
-4. Key scenarios (positive, negative, edge cases)
-Keep it under 300 words.`
-      : 'You are a QA expert. Provide a concise summary of test cases in 2-3 sentences.';
+      ? `You are a Product Owner and QA Expert. Analyze the following User Story and provide a CONCISE structured summary covering:
+   - Title clarity
+   - Description completeness
+   - Acceptance criteria quality
+   - Business value alignment
+   - Technical feasibility
+   - Compliance or regulatory alignment
+
+1. Key Strengths — What’s good or well-defined
+2. Improvement Recommendations — How to enhance clarity, completeness, and testability
+3. Readiness Assessment: Is this story ready for development? (Yes/No with justification)
+Keep the response under 300 words, and ensure feedback is actionable and professional.`
+      : 'You are a Product Owner and QA expert. Provide a concise summary of the user story in 2–3 sentences, covering the main goal, business value, and key acceptance criteria. Highlight any potential clarity or testability issues.';
 
     const userPrompt = summaryType === 'detailed' 
-      ? `Analyze these ${results.length} test cases. Group by module, note priority distribution, identify coverage gaps:\n\n${resultsText}`
-      : `Summarize these test cases:\n\n${resultsText}`;
+      ? `Analyze these ${results.length} user stories. Group by Title, Description, Acceptance criteria and identify coverage gaps:\n\n${resultsText}`
+      : `Summarize these user stories:\n\n${resultsText}`;
 
     // Use Testleaf API for chat completion
     console.log('🔧 Testleaf Config Check:');

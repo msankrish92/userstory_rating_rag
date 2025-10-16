@@ -654,27 +654,27 @@ Please provide your response in the expected JSON format.`;
       console.log('🎨 STEP 7: Building ICEPOT Prompt Template with Context');
       setGenerationProgress(65);
       
-      // Fetch the latest test case ID from database
-      const latestIdResponse = await fetch('http://localhost:3001/api/testcases/latest-id');
-      let nextTestCaseId = 'TC_NEW_001';
-      let startingId = 1;
+      // // Fetch the latest test case ID from database
+      // const latestIdResponse = await fetch('http://localhost:3001/api/testcases/latest-id');
+      // let nextTestCaseId = 'TC_NEW_001';
+      // let startingId = 1;
       
-      if (latestIdResponse.ok) {
-        const latestIdData = await latestIdResponse.json();
-        nextTestCaseId = latestIdData.nextTestCaseId || 'TC_NEW_001';
-        startingId = latestIdData.nextId || 1;
-        console.log(`   Latest test case: ${latestIdData.latestId}, Next ID: ${nextTestCaseId}`);
-      }
+      // if (latestIdResponse.ok) {
+      //   const latestIdData = await latestIdResponse.json();
+      //   nextTestCaseId = latestIdData.nextTestCaseId || 'TC_NEW_001';
+      //   startingId = latestIdData.nextId || 1;
+      //   console.log(`   Latest test case: ${latestIdData.latestId}, Next ID: ${nextTestCaseId}`);
+      // }
       
       // Optimize: Only include essential fields from retrieved test cases to reduce prompt size
       // OPTIMIZATION: Only include top 3-5 most relevant test cases to reduce prompt size
       const topRelevantCount = Math.min(5, topResults.length);
-      const essentialTestCases = topResults.slice(0, topRelevantCount).map(tc => ({
-        id: tc.id,
-        module: tc.module,
-        title: tc.title,
-        steps: tc.steps, // Most important field for generation
-        priority: tc.priority
+      const essentialUserStories = topResults.slice(0, topRelevantCount).map(us => ({
+        key: us.key,
+        summary: us.summary,
+        description: us.description,
+        businessValue: us.businessValue, // Most important field for generation
+        priority: us.priority
       }));
       
       // Format example test steps in RAG style (from existing test cases)
@@ -688,42 +688,44 @@ ${testQuery}
 ### RAG SUMMARY (${topResults.length} similar test cases found):
 ${summaryData.summary}
 
-### REFERENCE TEST CASES (Top ${essentialTestCases.length} - Study the test steps format):
-${JSON.stringify(essentialTestCases, null, 2)}
+### REFERENCE USER STORIES (Top ${essentialUserStories.length} - Study the test steps format):
+${JSON.stringify(essentialUserStories, null, 2)}
 
 ### REQUIREMENTS:
-1. Start IDs from ${nextTestCaseId}, continue sequentially
-2. Format testSteps with \\r\\n: "1.Step\\r\\n2.Step\\r\\n..."
-3. Include 5-8 steps per test case
-4. Add linkedUserStories and sourceCitations arrays
-5. Generate 6 test cases covering various scenarios
+1. Analyze the user story holistically — title, description, acceptance criteria, business value, technical feasibility, and compliance.
+2. Assign numerical ratings (1–10) for each criterion.
+3. Identify gaps or ambiguities and suggest specific improvements.
+4. Provide a final readiness verdict (“Ready for Dev”, “Needs Refinement”, or “Blocked”).
+
+Keep feedback professional, concise, and objective.
 
 ### OUTPUT JSON:
 {
   "analysis": {
     "userStoryTitle": "string",
     "userStoryModule": "string",
-    "existingCoverageCount": ${topResults.length},
-    "gapsIdentified": ["string"]
+    "summary": "string",
+    "criteriaRatings": {
+      "titleClarity": "number (1-10)",
+      "descriptionCompleteness": "number (1-10)",
+      "acceptanceCriteriaQuality": "number (1-10)",
+      "businessValueAlignment": "number (1-10)",
+      "technicalFeasibility": "number (1-10)",
+      "complianceCoverage": "number (1-10)"
+    },
+    "averageScore": "number (1-10)",
+    "readinessStatus": "Ready for Dev | Needs Refinement | Blocked",
+    "strengths": ["string"],
+    "gapsIdentified": ["string"],
+    "improvementRecommendations": ["string"],
+    "linkedTestCases": ["string"],
+    "sourceCitations": ["string"]
   },
-  "newTestCases": [{
-    "testCaseId": "${nextTestCaseId}",
-    "module": "string",
-    "testCaseTitle": "string",
-    "testCaseDescription": "string",
-    "preconditions": "string",
-    "testSteps": "string with \\r\\n",
-    "expectedResults": "string",
-    "priority": "P1|P2|P3",
-    "testType": "Integration|Functional",
-    "riskLevel": "High|Medium|Low",
-    "linkedUserStories": ["string"],
-    "sourceCitations": ["string"],
-    "complianceNotes": "string",
-    "estimatedExecutionTime": "string"
-  }],
-  "rationale": [{"testCaseId": "string", "reason": "string"}],
-  "recommendations": "string"
+  "rationale": {
+    "scoringExplanation": "string describing why each score was assigned",
+    "impactSummary": "string explaining how identified gaps affect delivery or testing"
+  },
+  "finalRecommendation": "string summarizing next steps or required actions"
 }`;
 
       console.log(`✅ Prompt built: ${fullPrompt.length} chars`);

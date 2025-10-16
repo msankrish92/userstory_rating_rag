@@ -26,7 +26,7 @@ const AUTH_TOKEN = process.env.AUTH_TOKEN;
 
 // User Stories specific configuration
 const USER_STORIES_COLLECTION = process.env.USER_STORIES_COLLECTION || 'user_stories';
-const USER_STORIES_DATA_FILE = "src/data/userstories.json";
+const USER_STORIES_DATA_FILE = "src/data/stories.json";
 
 /**
  * Create comprehensive input text for user story embedding
