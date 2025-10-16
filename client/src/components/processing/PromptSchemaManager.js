@@ -45,6 +45,7 @@ import {
   GetApp as ExportIcon,
   AutoAwesome as QualityIcon,
 } from '@mui/icons-material';
+import UserStoryValidationResults from './UserStoryValidationResults';
 
 function TabPanel({ children, value, index }) {
   return (
@@ -874,7 +875,7 @@ Keep feedback professional, concise, and objective.
         console.log('✅ JSON validation passed - all required fields present');
       }
 
-      // STEP 10: Conversion to HTML format (handled by renderTestCaseTable)
+      // STEP 10: User Story Validation Results (handled by UserStoryValidationResults component)
       console.log('🎨 STEP 10: Preparing HTML format conversion (handled by UI)');
       setGenerationProgress(100);
       
@@ -934,117 +935,17 @@ Keep feedback professional, concise, and objective.
 
 
 
-  // Render test case in table format
-  const renderTestCaseTable = (testCases, title, isReference = false) => {
-    if (!testCases || testCases.length === 0) {
+  // Render User Story Validation Results
+  const renderUserStoryValidation = (validationData) => {
+    if (!validationData) {
       return (
         <Alert severity="warning">
-          No test cases available
+          No validation data available
         </Alert>
       );
     }
 
-    return (
-      <Box>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {isReference ? '📚 Reference Test Cases (Retrieved from Database)' : '✨ Newly Generated Test Cases'}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {isReference 
-            ? `These are the top ${testCases.length} most relevant test cases retrieved from the database that were used as context for generation.`
-            : `${testCases.length} new test cases generated based on the retrieved context and identified gaps.`
-          }
-        </Typography>
-        
-        <TableContainer component={Paper} sx={{ maxHeight: 600, overflow: 'auto' }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: isReference ? '#e3f2fd' : '#e8f5e9' }}>Test Case ID</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: isReference ? '#e3f2fd' : '#e8f5e9' }}>Title</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: isReference ? '#e3f2fd' : '#e8f5e9' }}>Module</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: isReference ? '#e3f2fd' : '#e8f5e9' }}>Priority</TableCell>
-                {!isReference && <TableCell sx={{ fontWeight: 'bold', bgcolor: '#e8f5e9' }}>Test Type</TableCell>}
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: isReference ? '#e3f2fd' : '#e8f5e9', minWidth: 200 }}>Preconditions</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: isReference ? '#e3f2fd' : '#e8f5e9', minWidth: 300 }}>Test Steps</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: isReference ? '#e3f2fd' : '#e8f5e9', minWidth: 250 }}>Expected Results</TableCell>
-                {isReference && <TableCell sx={{ fontWeight: 'bold', bgcolor: '#e3f2fd' }}>Score</TableCell>}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {testCases.map((testCase, index) => (
-                <TableRow key={index} hover>
-                  <TableCell sx={{ fontFamily: 'monospace', color: 'primary.main', fontWeight: 'bold' }}>
-                    {testCase.testCaseId || testCase.id || `TC_${index + 1}`}
-                  </TableCell>
-                  <TableCell>{testCase.testCaseTitle || testCase.title}</TableCell>
-                  <TableCell>
-                    <Chip label={testCase.module} color="primary" size="small" />
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={testCase.priority} 
-                      color={
-                        testCase.priority?.includes('P1') || testCase.priority?.includes('Critical') ? 'error' :
-                        testCase.priority?.includes('P2') || testCase.priority?.includes('High') ? 'warning' : 'default'
-                      }
-                      size="small" 
-                    />
-                  </TableCell>
-                  {!isReference && (
-                    <TableCell>
-                      <Chip label={testCase.testType || 'Functional'} color="secondary" size="small" />
-                    </TableCell>
-                  )}
-                  <TableCell sx={{ fontSize: '0.85rem' }}>
-                    {testCase.preconditions || testCase.testCaseDescription || 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    <Box component="ol" sx={{ pl: 2, m: 0, fontSize: '0.85rem' }}>
-                      {(() => {
-                        // Handle testSteps as string (RAG format with \r\n)
-                        if (typeof testCase.testSteps === 'string') {
-                          const steps = testCase.testSteps.split(/\\r\\n|\\n|\r\n|\n/).filter(s => s.trim());
-                          return steps.map((step, idx) => (
-                            <li key={idx} style={{ marginBottom: '4px' }}>
-                              {step.replace(/^\d+\.\s*/, '')}
-                            </li>
-                          ));
-                        }
-                        // Handle testSteps as array
-                        if (Array.isArray(testCase.testSteps)) {
-                          return testCase.testSteps.map((step, idx) => (
-                            <li key={idx} style={{ marginBottom: '4px' }}>
-                              {step.replace(/^\d+\.\s*/, '')}
-                            </li>
-                          ));
-                        }
-                        return null;
-                      })()}
-                    </Box>
-                    {(!testCase.testSteps || (Array.isArray(testCase.testSteps) && testCase.testSteps.length === 0) || (typeof testCase.testSteps === 'string' && !testCase.testSteps.trim())) && (
-                      <Typography variant="caption" color="error">No steps defined</Typography>
-                    )}
-                  </TableCell>
-                  <TableCell sx={{ fontSize: '0.85rem' }}>
-                    {testCase.expectedResults || 'N/A'}
-                  </TableCell>
-                  {isReference && (
-                    <TableCell>
-                      <Chip 
-                        label={testCase.score?.toFixed(3) || 'N/A'} 
-                        color={testCase.score >= 0.85 ? 'success' : testCase.score >= 0.75 ? 'warning' : 'default'}
-                        size="small"
-                      />
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-    );
+    return <UserStoryValidationResults validationData={validationData} />;
   };
 
   // Export to CSV function (handles both string and array formats)
@@ -1312,14 +1213,23 @@ Keep feedback professional, concise, and objective.
                         
                         {/* Export Buttons */}
                         <Box sx={{ display: 'flex', gap: 1 }}>
-                          {pipelineView === 'generated' && llmRagResult.response?.response?.newTestCases && (
+                          {pipelineView === 'generated' && llmRagResult.response?.analysis && (
                             <Button
                               size="small"
                               variant="outlined"
                               startIcon={<ExportIcon />}
-                              onClick={() => exportToCSV(llmRagResult.response.newTestCases, 'generated_test_cases')}
+                              onClick={() => {
+                                const validationJSON = JSON.stringify(llmRagResult.response, null, 2);
+                                const blob = new Blob([validationJSON], { type: 'application/json' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'user_story_validation_results.json';
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              }}
                             >
-                              Export CSV
+                              Export Validation JSON
                             </Button>
                           )}
                           {pipelineView === 'reference' && llmRagResult.existingTestCases && (
@@ -1425,14 +1335,8 @@ Keep feedback professional, concise, and objective.
                         <Tabs value={pipelineView} onChange={(e, val) => setPipelineView(val)}>
                           <Tab 
                             value="reference" 
-                            label="Reference Test Cases" 
+                            label="Validation Result" 
                             icon={<SearchIcon />} 
-                            iconPosition="start"
-                          />
-                          <Tab 
-                            value="generated" 
-                            label="Generated Test Cases" 
-                            icon={<AiIcon />} 
                             iconPosition="start"
                           />
                         </Tabs>
@@ -1493,8 +1397,16 @@ Keep feedback professional, concise, and objective.
                             </CardContent>
                           </Card>
 
-                          {/* Reference Test Cases Table */}
-                          {renderTestCaseTable(llmRagResult.existingTestCases, 'Reference Test Cases', true)}
+                          {/* User Story Validation Results */}
+                          {llmRagResult.response?.analysis ? (
+                            <UserStoryValidationResults validationData={llmRagResult.response} />
+                          ) : (
+                            <Alert severity="info">
+                              <Typography variant="body2">
+                                <strong>Analysis completed.</strong> Reference data processed successfully.
+                              </Typography>
+                            </Alert>
+                          )}
                         </Box>
                       )}
 
@@ -1509,61 +1421,20 @@ Keep feedback professional, concise, and objective.
                             </Alert>
                           ) : (
                             <>
-                              {/* Analysis Summary */}
-                              {llmRagResult.response?.analysis && (
-                                <Card sx={{ mb: 3, bgcolor: '#fff9c4' }}>
-                                  <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                      🎯 Analysis & Gaps
-                                    </Typography>
-                                    <Grid container spacing={2}>
-                                      <Grid item xs={12} sm={6}>
-                                        <Typography variant="body2">
-                                          <strong>User Story:</strong> {llmRagResult.response.analysis.userStoryTitle}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                          <strong>Module:</strong> {llmRagResult.response.analysis.userStoryModule}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                          <strong>Coverage:</strong> {llmRagResult.response.analysis.existingCoverageCount} existing test cases
-                                        </Typography>
-                                      </Grid>
-                                      <Grid item xs={12} sm={6}>
-                                        <Typography variant="subtitle2" gutterBottom>Gaps Identified:</Typography>
-                                        <Box component="ul" sx={{ pl: 2, m: 0 }}>
-                                          {(llmRagResult.response.analysis.gapsIdentified || []).map((gap, idx) => (
-                                            <li key={idx}><Typography variant="body2">{gap}</Typography></li>
-                                          ))}
-                                        </Box>
-                                      </Grid>
-                                    </Grid>
-                                  </CardContent>
-                                </Card>
-                              )}
+              {/* User Story Validation Results */}
+              {llmRagResult.response?.analysis && (
+                <UserStoryValidationResults validationData={llmRagResult.response} />
+              )}
 
-                              {/* Generated Test Cases Table */}
-                              {llmRagResult.response?.newTestCases && llmRagResult.response.newTestCases.length > 0 ? (
-                                renderTestCaseTable(llmRagResult.response.newTestCases, 'Generated Test Cases', false)
-                              ) : (
-                                <Alert severity="warning">
-                                  <Typography variant="body2">
-                                    <strong>No test cases generated.</strong>
-                                  </Typography>
-                                  {llmRagResult.validationErrors && llmRagResult.validationErrors.length > 0 && (
-                                    <Box sx={{ mt: 1 }}>
-                                      <Typography variant="caption" display="block">Validation errors:</Typography>
-                                      <ul style={{ marginTop: 4, paddingLeft: 20 }}>
-                                        {llmRagResult.validationErrors.map((err, idx) => (
-                                          <li key={idx}><Typography variant="caption">{err}</Typography></li>
-                                        ))}
-                                      </ul>
-                                    </Box>
-                                  )}
-                                </Alert>
-                              )}
-
-                              {/* Rationale Section */}
-                              {llmRagResult.response?.rationale && (
+              {/* Additional validation information if no analysis found */}
+              {!llmRagResult.response?.analysis && llmRagResult.response && (
+                <Alert severity="info">
+                  <Typography variant="body2">
+                    <strong>Validation completed.</strong> Analysis results are ready for review.
+                  </Typography>
+                </Alert>
+              )}                              {/* Rationale Section - Keep for backwards compatibility */}
+                              {llmRagResult.response?.rationale && Array.isArray(llmRagResult.response.rationale) && (
                                 <Card sx={{ mt: 3, bgcolor: '#f3e5f5' }}>
                                   <CardContent>
                                     <Typography variant="h6" gutterBottom>
@@ -1582,7 +1453,7 @@ Keep feedback professional, concise, and objective.
                                 </Card>
                               )}
 
-                              {/* Recommendations */}
+                              {/* Recommendations - Keep for backwards compatibility */}
                               {llmRagResult.response?.recommendations && (
                                 <Alert severity="info" sx={{ mt: 2 }}>
                                   <Typography variant="body2">
