@@ -794,7 +794,7 @@ app.post('/api/search/deduplicate', async (req, res) => {
 // Summarize search results using TestLeaf API
 app.post('/api/search/summarize', async (req, res) => {
   try {
-    const { results, summaryType = 'concise' } = req.body;
+    const { results, summaryType = 'detailed' } = req.body;
     
     if (!results || !Array.isArray(results)) {
       return res.status(400).json({ error: 'Results array is required' });
@@ -808,37 +808,56 @@ app.post('/api/search/summarize', async (req, res) => {
       });
     }
 
-    // Prepare concise content for summarization (reduce detail to avoid large prompts)
-    // Handle both field name formats and include key information only
-    const resultsText = results.map((r, idx) => {
-      const id = r.testCaseId || r.id || 'N/A';
-      const title = r.testCaseTitle || r.title || 'No title';
-      const module = r.module || 'Unknown';
-      const priority = r.priority || 'N/A';
-      const type = r.type || 'Functional';
-      
-      // Simplified format - just key fields
-      return `${idx + 1}. ${id} | ${module} | ${priority} | ${type} | ${title}`;
-    }).join('\n');
+// Update the resultsText mapping to extract user story fields
+const resultsText = results.map((r, idx) => {
+  // Extract user story fields instead of test case fields
+  const key = r.key || r.id || 'N/A';
+  const title = r.title || r.summary || 'No title';
+  const module = r.module || 'Unknown';
+  const priority = r.priority || 'N/A';
+  const businessValue = r.businessValue || 'Not specified';
+  const description = r.description || 'No description';
+  const acceptanceCriteria = r.acceptanceCriteria || 'Not defined';
+  
+  // Format for user story analysis - include key user story elements
+  return `${idx + 1}. ${key}
+   Title: ${title}
+   Module: ${module} | Priority: ${priority}
+   Description: ${description.substring(0, 200)}${description.length > 200 ? '...' : ''}
+   Business Value: ${businessValue.substring(0, 150)}${businessValue.length > 150 ? '...' : ''}
+   Acceptance Criteria: ${acceptanceCriteria.substring(0, 200)}${acceptanceCriteria.length > 200 ? '...' : ''}`;
+}).join('\n\n');
 
-    const systemPrompt = summaryType === 'detailed'
-      ? `You are a Product Owner and QA Expert. Analyze the following User Story and provide a CONCISE structured summary covering:
-   - Title clarity
-   - Description completeness
-   - Acceptance criteria quality
-   - Business value alignment
-   - Technical feasibility
-   - Compliance or regulatory alignment
+const systemPrompt = summaryType === 'detailed'
+  ? `You are a Product Owner and QA Expert analyzing user stories for development readiness.
 
-1. Key Strengths — What’s good or well-defined
-2. Improvement Recommendations — How to enhance clarity, completeness, and testability
-3. Readiness Assessment: Is this story ready for development? (Yes/No with justification)
-Keep the response under 300 words, and ensure feedback is actionable and professional.`
-      : 'You are a Product Owner and QA expert. Provide a concise summary of the user story in 2–3 sentences, covering the main goal, business value, and key acceptance criteria. Highlight any potential clarity or testability issues.';
+Analyze the following user stories and provide a structured assessment covering:
+- **Title Clarity**: Are titles clear, specific, and actionable?
+- **Description Completeness**: Is the context and user workflow well-defined?
+- **Acceptance Criteria Quality**: Are criteria measurable and testable?
+- **Business Value Alignment**: Is the business value clear and justified?
+- **Technical Feasibility**: Are there any implementation complexity concerns?
+- **Compliance Coverage**: Are HIPAA/regulatory requirements addressed?
 
-    const userPrompt = summaryType === 'detailed' 
-      ? `Analyze these ${results.length} user stories. Group by Title, Description, Acceptance criteria and identify coverage gaps:\n\n${resultsText}`
-      : `Summarize these user stories:\n\n${resultsText}`;
+Format your response as:
+1. **Key Strengths** — What's well-defined across these user stories
+2. **Common Gaps** — Recurring issues or missing elements
+3. **Priority Recommendations** — Most critical improvements needed
+4. **Development Readiness** — Overall assessment of story quality
+
+Keep the response under 300 words, focused on actionable insights for Product Owners.`
+  
+  : `You are a Product Owner and QA expert. Provide a concise summary of these user stories focusing on:
+- Main functional areas covered
+- Overall quality of acceptance criteria
+- Key business value themes
+- Critical gaps that need attention
+
+Keep it to 2-3 sentences highlighting the most important insights.`;
+
+const userPrompt = summaryType === 'detailed' 
+  ? `Analyze these ${results.length} user stories for development readiness. Focus on recurring patterns, quality issues, and improvement opportunities:\n\n${resultsText}`
+  : `Summarize the quality and coverage of these user stories:\n\n${resultsText}`;
 
     // Use Testleaf API for chat completion
     console.log('🔧 Testleaf Config Check:');

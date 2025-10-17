@@ -385,7 +385,7 @@ const UserStoryValidationResults = ({ validationData }) => {
                 </Typography>
                 
                 <Grid container spacing={3}>
-                  {analysis.linkedTestCases?.length > 0 && (
+                  {/* {analysis.linkedTestCases?.length > 0 && (
                     <Grid item xs={12} sm={6}>
                       <Typography variant="subtitle2" gutterBottom>
                         Linked Test Cases:
@@ -402,7 +402,7 @@ const UserStoryValidationResults = ({ validationData }) => {
                         ))}
                       </Box>
                     </Grid>
-                  )}
+                  )} */}
                   
                   {analysis.sourceCitations?.length > 0 && (
                     <Grid item xs={12} sm={6}>

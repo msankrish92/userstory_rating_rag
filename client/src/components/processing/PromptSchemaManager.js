@@ -135,56 +135,72 @@ const DEFAULT_JSON_SCHEMA = `{
   ]
 }`;
 
-const DEFAULT_PROMPT_TEMPLATE = `# HEALTHCARE TEST CASE GENERATION
+const DEFAULT_PROMPT_TEMPLATE = `# USER STORY VALIDATION & ANALYSIS
 
 ## INSTRUCTION
-Generate 6 high-quality test cases for the user story using retrieved test case context. Each must:
-- Include 5-8 detailed, numbered test steps
-- Define measurable expected results
-- Cover positive, negative, and edge cases
-- Reference source test cases
+You are a Product Owner and QA Expert. Analyze the given user story holistically and provide a comprehensive validation assessment. Focus on:
+- Title clarity and actionability
+- Description completeness and business context
+- Acceptance criteria quality and testability
+- Business value alignment and ROI potential
+- Technical feasibility and implementation complexity
+- Compliance coverage (HIPAA, regulatory requirements)
 
 ## CONTEXT
-MongoDB database with 6,000+ healthcare test cases covering Patient Registration, Laboratory, Ward Management, Billing, Prescription, Diagnostics.
-Healthcare entities: UHID, PRN, ERN, OTP.
+Healthcare management system with 6,000+ test cases covering Patient Registration, Laboratory, Ward Management, Billing, Prescription, Diagnostics, and Patient Communication modules. System handles PHI/PII data with strict HIPAA compliance requirements.
 
 ## EXAMPLES
-Study the retrieved test cases below for format, terminology, and step structure.
+Use the retrieved user stories below to understand domain terminology, acceptance criteria patterns, and compliance considerations. Pay attention to healthcare-specific entities: UHID, PRN, ERN, OTP, patient consent requirements.
 
 ## PERSONA
-Senior QA Engineer with healthcare systems expertise (HIPAA, HMS, PHI/PII).
+Senior Product Owner with 10+ years healthcare systems expertise. Deep understanding of HIPAA regulations, clinical workflows, and QA best practices. Focus on delivery readiness and risk mitigation.
 
 ## OUTPUT FORMAT
-Valid JSON with this schema:
+Respond ONLY with valid JSON matching this exact schema:
+
 {
   "analysis": {
-    "userStoryTitle": "string",
-    "userStoryModule": "string",
-    "existingCoverageCount": number,
-    "gapsIdentified": ["string"]
+    "userStoryTitle": "extracted or inferred title from the user story",
+    "userStoryModule": "primary healthcare module (e.g., Patient Communication, Laboratory, etc.)",
+    "summary": "2-3 sentence overview of the user story's main goal and business impact",
+    "criteriaRatings": {
+      "titleClarity": <number 1-10>,
+      "descriptionCompleteness": <number 1-10>,
+      "acceptanceCriteriaQuality": <number 1-10>,
+      "businessValueAlignment": <number 1-10>,
+      "technicalFeasibility": <number 1-10>,
+      "complianceCoverage": <number 1-10>
+    },
+    "averageScore": <calculated average of all criteria ratings>,
+    "readinessStatus": "Ready for Dev | Needs Refinement | Blocked",
+    "strengths": ["list of well-defined aspects"],
+    "gapsIdentified": ["list of missing or unclear elements"],
+    "improvementRecommendations": ["specific, actionable suggestions"],
+    "linkedTestCases": ["IDs of related test cases from retrieved context"],
+    "sourceCitations": ["references to similar user stories or patterns found"]
   },
-  "newTestCases": [{
-    "testCaseId": "string",
-    "module": "string",
-    "testCaseTitle": "string",
-    "testCaseDescription": "string",
-    "preconditions": "string",
-    "testSteps": "string with \\r\\n separators",
-    "expectedResults": "string",
-    "priority": "P1|P2|P3",
-    "testType": "Integration|Functional",
-    "riskLevel": "Critical|High|Medium|Low",
-    "linkedUserStories": ["string"],
-    "sourceCitations": ["string"],
-    "complianceNotes": "string",
-    "estimatedExecutionTime": "string"
-  }],
-  "rationale": [{"testCaseId": "string", "reason": "string"}],
-  "recommendations": "string"
+  "rationale": {
+    "scoringExplanation": "detailed explanation of why each criterion received its rating",
+    "impactSummary": "explanation of how identified gaps affect development timeline, testing effort, or compliance risk"
+  },
+  "finalRecommendation": "concise next steps - whether to proceed, refine, or block development"
 }
 
+## SCORING GUIDELINES
+- **titleClarity (1-10)**: Clear, specific, actionable title with role, goal, benefit
+- **descriptionCompleteness (1-10)**: Complete context, user workflow, business rules
+- **acceptanceCriteriaQuality (1-10)**: Measurable, testable, comprehensive coverage
+- **businessValueAlignment (1-10)**: Clear ROI, user benefit, strategic alignment
+- **technicalFeasibility (1-10)**: Implementation complexity, dependency assessment
+- **complianceCoverage (1-10)**: HIPAA requirements, audit trails, data protection
+
+## READINESS CRITERIA
+- **Ready for Dev**: Average score ≥ 8.0, no critical gaps, clear acceptance criteria
+- **Needs Refinement**: Average score 6.0-7.9, minor gaps, refinement needed
+- **Blocked**: Average score < 6.0, critical gaps, compliance issues, unclear requirements
+
 ## TONE
-Professional, technical. Use precise healthcare terminology (UHID, PRN, ERN). Measurable language. Compliance awareness.`;
+Professional, constructive, actionable. Focus on delivery readiness and risk mitigation. Use healthcare domain terminology appropriately.`;
 
 
 const EXAMPLE_TEST_QUERY = `Module: Patient Communication & Diagnostics
@@ -675,7 +691,8 @@ Please provide your response in the expected JSON format.`;
         summary: us.summary,
         description: us.description,
         businessValue: us.businessValue, // Most important field for generation
-        priority: us.priority
+        priority: us.priority,
+        acceptanceCriteria: us.acceptanceCriteria
       }));
       
       // Format example test steps in RAG style (from existing test cases)
@@ -683,10 +700,10 @@ Please provide your response in the expected JSON format.`;
       
       const fullPrompt = `${promptTemplate}
 
-### USER STORY FOR TEST GENERATION:
+### GIVEN USER STORY
 ${testQuery}
 
-### RAG SUMMARY (${topResults.length} similar test cases found):
+### RAG SUMMARY (${topResults.length} similar User Stories found):
 ${summaryData.summary}
 
 ### REFERENCE USER STORIES (Top ${essentialUserStories.length} - Study the test steps format):
@@ -807,65 +824,72 @@ Keep feedback professional, concise, and objective.
       if (!validatedResponse || typeof validatedResponse !== 'object') {
         validationErrors.push('Response is not a valid JSON object');
       } else {
-        // Check for required fields
+        // Check for required fields according to user story validation schema
         if (!validatedResponse.analysis) {
           validationErrors.push('Missing "analysis" object');
         } else {
-          if (!validatedResponse.analysis.userStoryTitle) {
+          const analysis = validatedResponse.analysis;
+          if (!analysis.userStoryTitle) {
             validationErrors.push('Missing analysis.userStoryTitle');
+          }
+          if (!analysis.userStoryModule) {
+            validationErrors.push('Missing analysis.userStoryModule');
+          }
+          if (!analysis.summary) {
+            validationErrors.push('Missing analysis.summary');
+          }
+          if (!analysis.criteriaRatings || typeof analysis.criteriaRatings !== 'object') {
+            validationErrors.push('Missing or invalid analysis.criteriaRatings object');
+          } else {
+            const requiredCriteria = [
+              'titleClarity', 'descriptionCompleteness', 'acceptanceCriteriaQuality',
+              'businessValueAlignment', 'technicalFeasibility', 'complianceCoverage'
+            ];
+            requiredCriteria.forEach(criterion => {
+              const rating = analysis.criteriaRatings[criterion];
+              if (typeof rating !== 'number' || rating < 1 || rating > 10) {
+                validationErrors.push(`Missing or invalid analysis.criteriaRatings.${criterion} (must be number 1-10)`);
+              }
+            });
+          }
+          if (typeof analysis.averageScore !== 'number' || analysis.averageScore < 1 || analysis.averageScore > 10) {
+            validationErrors.push('Missing or invalid analysis.averageScore (must be number 1-10)');
+          }
+          if (!analysis.readinessStatus || 
+              !['Ready for Dev', 'Needs Refinement', 'Blocked'].includes(analysis.readinessStatus)) {
+            validationErrors.push('Missing or invalid analysis.readinessStatus (must be "Ready for Dev", "Needs Refinement", or "Blocked")');
+          }
+          if (!Array.isArray(analysis.strengths)) {
+            validationErrors.push('Missing or invalid analysis.strengths (must be array)');
+          }
+          if (!Array.isArray(analysis.gapsIdentified)) {
+            validationErrors.push('Missing or invalid analysis.gapsIdentified (must be array)');
+          }
+          if (!Array.isArray(analysis.improvementRecommendations)) {
+            validationErrors.push('Missing or invalid analysis.improvementRecommendations (must be array)');
+          }
+          if (!Array.isArray(analysis.linkedTestCases)) {
+            validationErrors.push('Missing or invalid analysis.linkedTestCases (must be array)');
+          }
+          if (!Array.isArray(analysis.sourceCitations)) {
+            validationErrors.push('Missing or invalid analysis.sourceCitations (must be array)');
           }
         }
         
-        if (!validatedResponse.newTestCases || !Array.isArray(validatedResponse.newTestCases)) {
-          validationErrors.push('Missing or invalid "newTestCases" array');
-        } else if (validatedResponse.newTestCases.length === 0) {
-          validationErrors.push('newTestCases array is empty - no test cases generated');
+        if (!validatedResponse.rationale || typeof validatedResponse.rationale !== 'object') {
+          validationErrors.push('Missing or invalid "rationale" object');
         } else {
-          console.log(`   Validating ${validatedResponse.newTestCases.length} test cases...`);
-          
-          // Validate each test case
-          validatedResponse.newTestCases.forEach((tc, idx) => {
-            const tcNum = idx + 1;
-            
-            if (!tc.testCaseId) {
-              validationErrors.push(`Test case ${tcNum}: Missing testCaseId`);
-            } else if (!tc.testCaseId.startsWith('TC_')) {
-              validationErrors.push(`Test case ${tcNum} (${tc.testCaseId}): ID should start with 'TC_'`);
-            }
-            
-            if (!tc.module) validationErrors.push(`Test case ${tcNum}: Missing module`);
-            if (!tc.testCaseTitle) validationErrors.push(`Test case ${tcNum}: Missing testCaseTitle`);
-            if (!tc.testCaseDescription) validationErrors.push(`Test case ${tcNum}: Missing testCaseDescription`);
-            
-            // testSteps can be string (RAG format) or array
-            if (!tc.testSteps) {
-              validationErrors.push(`Test case ${tcNum}: Missing testSteps`);
-            } else if (typeof tc.testSteps === 'string') {
-              // Count steps in string format (split by \r\n or \n)
-              const stepCount = tc.testSteps.split(/\\r\\n|\\n|\r\n|\n/).filter(s => s.trim()).length;
-              if (stepCount < 5) {
-                validationErrors.push(`Test case ${tcNum}: Must have at least 5 test steps (found ${stepCount})`);
-              }
-            } else if (Array.isArray(tc.testSteps)) {
-              if (tc.testSteps.length < 5) {
-                validationErrors.push(`Test case ${tcNum}: Must have at least 5 test steps (found ${tc.testSteps.length})`);
-              }
-            } else {
-              validationErrors.push(`Test case ${tcNum}: testSteps must be string or array`);
-            }
-            
-            if (!tc.expectedResults) validationErrors.push(`Test case ${tcNum}: Missing expectedResults`);
-            if (!tc.priority) validationErrors.push(`Test case ${tcNum}: Missing priority`);
-            
-            // Check for linkedUserStories array
-            if (!tc.linkedUserStories || !Array.isArray(tc.linkedUserStories) || tc.linkedUserStories.length === 0) {
-              validationErrors.push(`Test case ${tcNum}: Missing or empty linkedUserStories array`);
-            }
-          });
+          const rationale = validatedResponse.rationale;
+          if (!rationale.scoringExplanation) {
+            validationErrors.push('Missing rationale.scoringExplanation');
+          }
+          if (!rationale.impactSummary) {
+            validationErrors.push('Missing rationale.impactSummary');
+          }
         }
         
-        if (!validatedResponse.rationale || !Array.isArray(validatedResponse.rationale)) {
-          validationErrors.push('Missing or invalid "rationale" array');
+        if (!validatedResponse.finalRecommendation) {
+          validationErrors.push('Missing finalRecommendation');
         }
       }
       
@@ -1018,7 +1042,7 @@ Keep feedback professional, concise, and objective.
       {/* Main Tabs */}
       <Paper elevation={2}>
         <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
-          <Tab icon={<TestIcon />} label="Test & Preview" />
+          <Tab icon={<TestIcon />} label="User Story validation" />
         </Tabs>
         <Divider />
 
@@ -1259,7 +1283,7 @@ Keep feedback professional, concise, and objective.
                       )}
 
                       {/* Accuracy Score */}
-                      {accuracyScore !== null && !llmRagResult.error && (
+                      {/* {accuracyScore !== null && !llmRagResult.error && (
                         <Alert severity="success" sx={{ mb: 2 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             <QualityIcon />
@@ -1280,7 +1304,7 @@ Keep feedback professional, concise, and objective.
                             </Box>
                           </Box>
                         </Alert>
-                      )}
+                      )} */}
 
                       {/* Pipeline Steps Summary */}
                       {llmRagResult.pipelineSteps && (
